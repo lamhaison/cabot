@@ -22,8 +22,8 @@ from .alert import (
 from .calendar import get_events
 from .graphite import parse_metric
 from .jenkins import get_job_status
-from .tasks import update_service, update_instance
-
+from .tasks import update_service, update_instance, run_remotecommand
+from django.conf import settings
 RAW_DATA_LIMIT = 5000
 
 logger = get_task_logger(__name__)
@@ -340,6 +340,7 @@ class Instance(CheckGroupMixin):
         return super(Instance, self).delete(*args, **kwargs)
 
 
+
 class Snapshot(models.Model):
     class Meta:
         abstract = True
@@ -635,6 +636,7 @@ class GraphiteStatusCheck(StatusCheck):
             return "%s %s %0.1f" % (value, self.check_type, float(self.value))
 
     def _run(self):
+        # logger.info('check graphite')
         if not hasattr(self, 'utcnow'):
             self.utcnow = None
         result = StatusCheckResult(check=self)
@@ -642,13 +644,17 @@ class GraphiteStatusCheck(StatusCheck):
         failures = []
 
         last_result = self.last_result()
+        # logger.info('result: %s' % self.last_result())
         if last_result:
             last_result_started = last_result.time
             time_to_check = max(self.frequency, ((timezone.now() - last_result_started).total_seconds() / 60) + 1)
         else:
             time_to_check = self.frequency
 
+        # logger.info('metric: %s' % self.metric)
         graphite_output = parse_metric(self.metric, mins_to_check=time_to_check, utcnow=self.utcnow)
+        # logger.info('graphute_output: %s' % graphite_output)
+
 
         try:
             result.raw_data = json.dumps(graphite_output['raw'])
@@ -687,6 +693,27 @@ class GraphiteStatusCheck(StatusCheck):
 
                 if not failure_value is None:
                     failures.append((s["target"], failure_value))
+                    # logger.info('failure_value %s: %s' % (s['target'], failure_value))
+                    # Send request to get data about cpu
+                    try:
+
+                        # If check disk used then ignore.
+                        if 'percent_bytes-used' not in self.metric:
+                            ansible_host_name = s['target'].split('.')[1]
+                            if 'aggregation-cpu-average.cpu-idle' in self.metric:
+                                command = settings.CMD_GET_CPU_INFO
+                            elif 'memory.memory-used ' in self.metric:
+                                command = settings.CMD_GET_MEMORY_INFO
+                            else:
+                                command = 'ps aux'
+
+                            run_remotecommand.delay(ansible_host_name, command)
+                            logger.info('send request to get more information: %s %s' % (s['target'], command))
+                    except Exception as ex:
+                        logger.error(ex)
+                        pass
+
+
 
         if len(failures) > self.allowed_num_failures:
             result.succeeded = False
@@ -834,10 +861,7 @@ class StatusCheckResult(models.Model):
 
     class Meta:
         ordering = ['-time_complete']
-        index_together = (
-            ('check', 'time_complete'),
-            ('check', 'id'),  # used to speed up StatusCheck.last_result
-        )
+        index_together = (('check', 'time_complete'),)
 
     def __unicode__(self):
         return '%s: %s @%s' % (self.status, self.check.name, self.time)
