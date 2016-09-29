@@ -35,6 +35,7 @@ class AlertPluginUserData(PolymorphicModel):
 
 def send_alert(service, duty_officers=None):
     users = service.users_to_notify.filter(is_active=True)
+    logger.debug('send email to alert')
     for alert in service.alerts.all():
         try:
             alert.send_alert(service, users, duty_officers)

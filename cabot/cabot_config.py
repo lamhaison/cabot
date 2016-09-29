@@ -21,7 +21,7 @@ WWW_SCHEME = os.environ.get('WWW_SCHEME', "https")
 HTTP_USER_AGENT = os.environ.get('HTTP_USER_AGENT', 'Cabot')
 
 # How often should alerts be sent for important failures?
-ALERT_INTERVAL = int(os.environ.get('ALERT_INTERVAL', 10))
+ALERT_INTERVAL = int(os.environ.get('ALERT_INTERVAL', 5))
 
 # How often should notifications be sent for less important issues?
 NOTIFICATION_INTERVAL = int(os.environ.get('NOTIFICATION_INTERVAL', 120))
@@ -31,3 +31,12 @@ ACKNOWLEDGEMENT_EXPIRY = int(os.environ.get('ACKNOWLEDGEMENT_EXPIRY', 20))
 
 # Default plugins are used if the user has not specified.
 CABOT_PLUGINS_ENABLED = os.environ.get('CABOT_PLUGINS_ENABLED', 'cabot_alert_hipchat,cabot_alert_twilio,cabot_alert_email')
+
+
+# Setting for run commandline when have trigger
+REMOTE_USER = os.getenv('REMOTE_USER', 'ubuntu')
+REMOTE_KEY = os.getenv('REMOTE_KEY', '/opt/keys/ansible_key')
+LOG_DIR = os.getenv('LOG_DIR', '/var/log/trace/')
+CMD_GET_CPU_INFO = os.getenv('CMD_GET_CPU_INFO', 'ps aux')
+CMD_GET_MEMORY_INFO = os.getenv('CMD_GET_MEMORY_INFO', 'ps aux')
+

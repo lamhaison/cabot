@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 
 @task(ignore_result=True)
 def run_status_check(check_or_id):
+
+    # logger.info('run status check')
+    # logging.info('run status check')
     from .models import StatusCheck
     if not isinstance(check_or_id, StatusCheck):
         check = StatusCheck.objects.get(id=check_or_id)
@@ -34,6 +37,8 @@ def run_status_check(check_or_id):
 
 @task(ignore_result=True)
 def run_all_checks():
+    # logger.info('run all check')
+    # logging.info('run all check')
     from .models import StatusCheck
     from datetime import timedelta
     checks = StatusCheck.objects.all()
@@ -109,4 +114,17 @@ def clean_db(days_to_retain=60):
     ServiceStatusSnapshot.objects.filter(id__in=snapshot_ids).delete()
 
     clean_db.apply_async(kwargs={'days_to_retain': days_to_retain}, countdown=3)
+
+
+@task(ignore_result=True)
+def run_remotecommand(host, command):
+    from .remotecmd import RemoteCommand
+    from .models import Instance
+    instance = Instance.objects.get(name=host)
+    ip_address = instance.address
+    logger.info('ip_address: %s' % ip_address)
+    command = RemoteCommand(ip_address, command)
+    result = command.execute()
+    logger.info('result of file: %s' % result)
+    return result
 

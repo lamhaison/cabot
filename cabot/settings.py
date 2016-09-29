@@ -10,6 +10,8 @@ PROJECT_ROOT = os.path.abspath(settings_dir)
 
 TEMPLATE_DEBUG = DEBUG = os.environ.get("DEBUG", False)
 
+DEBUG = False
+
 ADMINS = (
     ('Admin', os.environ.get('ADMIN_EMAIL', 'name@example.com')),
 )
@@ -125,6 +127,7 @@ INSTALLED_APPS = (
     'jsonify',
     'cabot.cabotapp',
     'rest_framework',
+    'rest_framework.authtoken',
 )
 
 # Load additional apps from configuration file
@@ -170,7 +173,8 @@ LOGGING = {
     'disable_existing_loggers': True,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            'format': '%(levelname)s %(asctime)s %(name)s:%(lineno)s]: %(module)s %(process)d %(thread)d %(message)s'
+            # 'format': "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -202,12 +206,12 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console', 'log_file', 'mail_admins'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
         'django.request': {
             'handlers': ['console', 'log_file', 'mail_admins'],
-            'level': 'ERROR',
+            'level': 'DEBUG',
             'propagate': False,
         },
         'django.db.backends': {
@@ -215,10 +219,15 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'cabot': {
+            'handlers': ['log_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         # Catch All Logger -- Captures any other logging
         '': {
             'handlers': ['console', 'log_file', 'mail_admins'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         }
     }
@@ -228,6 +237,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.DjangoModelPermissions',
@@ -248,3 +258,5 @@ if AUTH_LDAP.lower() == "true":
     AUTHENTICATION_BACKENDS += tuple(['django_auth_ldap.backend.LDAPBackend'])
 
 EXPOSE_USER_API = os.environ.get('EXPOSE_USER_API', False)
+
+
